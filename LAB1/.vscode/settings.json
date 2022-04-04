@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "linklayer.h": "c",
+        "signal.h": "c",
+        "stat.h": "c"
+    }
+}

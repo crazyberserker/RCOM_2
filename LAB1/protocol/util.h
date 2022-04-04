@@ -21,6 +21,9 @@ void set_SET(unsigned char *buf);
     
 void set_UA(unsigned char *buf);
 
-int state_machine(int state, unsigned char *buf,int bcc);
+int state_machine(int state, unsigned char *buf,int bcc, int C);
+
+
+
 
 #endif
