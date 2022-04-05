@@ -16,6 +16,10 @@
 int conta=0;
 int flag = TRUE;
 
+linkLayer aux;
+int general_fd;
+struct termios oldtio,newtio;
+
 void atende(int signal)                   // atende alarme
 {
     conta++;
@@ -34,8 +38,6 @@ int llopen(linkLayer connectionParameters){
 
     int flag2 = FALSE;
 
-    struct termios oldtio,newtio;
-
 
     fd = open(connectionParameters.serialPort, O_RDWR | O_NOCTTY );
     if (fd <0) {perror(connectionParameters.serialPort); return -1; }
@@ -44,6 +46,9 @@ int llopen(linkLayer connectionParameters){
       perror("tcgetattr");
       return -1;
     }
+
+
+    general_fd = fd;
 
     bzero(&newtio, sizeof(newtio));
     newtio.c_cflag = connectionParameters.baudRate | CS8 | CLOCAL | CREAD;
@@ -69,6 +74,8 @@ int llopen(linkLayer connectionParameters){
     }
 
     printf("New termios structure set\n");
+
+    aux = connectionParameters;
 
     if(connectionParameters.role == TRANSMITTER){
         
@@ -169,5 +176,138 @@ int llread(char *packet){
 // if showStatistics == TRUE, link layer should print statistics in the console on close.
 // Return "1" on success or "-1" on error.
 int llclose(int showStatistics){
+
+    (void)signal(SIGALRM, atende);
+
+    //socket setup
+    int res;
+
+    int conta = 0;
+
+    int flag2 = FALSE;
+
+    if(aux.role == TRANSMITTER){
+        
+        int state = START;
+
+        unsigned char *buf;
+        unsigned char buf1[5];
+        unsigned char buf2[5];
+
+        int flag2 = FALSE;
+        
+        set_DISC(buf1);
+        set_UA(buf2);
+       
+        do{
+                    printf("Sending DISC: %d\n ", conta); 
+                    res = write(general_fd,buf1, 5);
+                    alarm(aux.timeOut);   
+                    if(res == -1) {printf("Error sending DISC\n"); return -1;}
+                    else
+                        printf("DISC sent\n");
+                    
+                    flag = FALSE;
+
+                    while(!flag2 && !flag){
+                        res = read(general_fd,&buf,1);
+                        if(res == -1)
+                            {printf("Error read\n"); return -1;}
+                        state = state_machine(state, &buf,BCC_DISC, C_DISC);
+                        
+                        if(state == FINISH){
+                        printf("End of state machine\n");
+                        printf("DISC Received\n");
+                        res = write(general_fd,buf2, 5);
+                        if(res == -1) {printf("Error sending UA\n"); return -1;}
+                            else
+                                printf("UA sent\n");
+                        flag2 = TRUE;
+                        break;
+                     }
+                }
+           
+
+        
+        } while(conta < aux.numTries && flag );
+        
+        alarm(0);
+        
+        if(!flag2) {printf("Not DISC received\n"); return -1;}
+
+    }else if(aux.role == RECEIVER){
+
+        unsigned char *buf;
+        unsigned char buf1[5];
+
+        set_DISC(buf1);
+
+        int state = START;
+     
+        while(1){
+
+            while(state != FINISH){
+                res = read(general_fd,&buf,1);
+                    if(res == -1)
+                        break;
+                state=state_machine(state, &buf,BCC_DISC, C_DISC);
+            }
+             if(state == FINISH){
+                    printf("End of state machine\n");
+                    printf("DISC Received\n");
+                    break;
+            }
+        }
+
+        do{
+                    printf("Sending DISC: %d\n ", conta);
+                    res = write(general_fd,buf1, 5);
+                    //printf("%d\n", res);
+                    alarm(aux.timeOut);   
+                    if(res == -1) {printf("Error sending DISC\n"); return -1;}
+                    else
+                        printf("DISC sent\n");
+                    
+                    flag = FALSE;
+
+                    while(!flag2 && !flag){
+                        res = read(general_fd,&buf,1);
+                        //printf("res: %d\n");
+                        if(res == -1)
+                            {printf("Error read\n"); return -1;}
+                        state = state_machine(state, &buf,BCC_UA, C_UA);
+                        
+                        if(state == FINISH){
+                        printf("End of state machine\n");
+                        printf("UA Received\n");
+                        flag2 = TRUE;
+                        break;
+                     }
+                }
+           
+
+        
+        } while(conta < aux.numTries && flag );
+        
+        alarm(0);
+        
+        if(!flag2) {printf("Not UA received\n"); return -1;}        
+        /*res = write(general_fd,buf1,5);
+            
+            if(res == -1)
+                printf("Error sending DISC\n");
+            else
+                printf("Disc sent\n");
+         */   
+    }else 
         return -1;
+    
+    if(tcsetattr(general_fd,TCSANOW,&oldtio)==-1){
+        printf("Error reseting serial port\n");
+        return -1;
+    }else
+        close(general_fd);
+        printf("Closed!\n Stats\n");
+    
+    return 1;
 }

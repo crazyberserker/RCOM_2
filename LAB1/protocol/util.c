@@ -25,6 +25,14 @@ void set_UA(unsigned char *buf){
     buf[4] = FLAG;
 }
 
+void set_DISC(unsigned char *buf){
+    buf[0] = FLAG;
+    buf[1] = A;
+    buf[2] = C_DISC;
+    buf[3] = BCC_DISC; //BCC
+    buf[4] = FLAG;
+}
+
 int state_machine(int state, unsigned char *buf, int bcc, int C){
     switch(state){
     
