@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 		fflush(stderr);
 
 		// open file to read
-    		char *file_path = argv[3]; /*
+    		char *file_path = argv[3]; 
 	      int file_desc = open(file_path, O_RDONLY);
     		if(file_desc < 0) {
         		fprintf(stderr, "Error opening file: %s\n", file_path);
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
                         }
 
 			sleep(1);
-		}*/
+		}
     		// close connection
 		llclose(1);
     		//close(file_desc);
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 char *file_path = argv[3];
- /*               int file_desc = open(file_path, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+               int file_desc = open(file_path, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 		if(file_desc < 0) {
                         fprintf(stderr, "Error opening file: %s\n", file_path);
                         exit(1);
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
             	}
-		*/
+		
                 llclose(1);
                 //close(file_desc);
                 return 0;
